@@ -51,7 +51,8 @@ contract PrivateSendUSDC is FHERC20ERC20Wrapper, Ownable2Step, Pausable {
 
     // ── deposits (capped, pausable) ──────────────────────────────────────────
 
-    /// @inheritdoc FHERC20ERC20Wrapper
+    /// @notice Shield `amount` USDC into Private USDC for `to`, subject to the caps and the pause.
+    /// @dev Caps count only the part actually pulled in (rounded down to a multiple of {rate}).
     function shield(address to, uint256 amount) public virtual override whenNotPaused returns (sharedEuint64) {
         uint256 counted = amount - (amount % rate());
         uint256 newUserTotal = shieldedBy[msg.sender] + counted;

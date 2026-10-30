@@ -30,8 +30,12 @@ export const common = {
   target: "node24",
   minify: true,
   legalComments: "none",
-  // CommonJS dependencies (node-tfhe) need a real `require` inside an ES module bundle.
-  banner: { js: 'import{createRequire as __cr}from"node:module";const require=__cr(import.meta.url);' },
+  // CommonJS dependencies (node-tfhe) need a real `require`, `__filename` and `__dirname` inside an ES module bundle.
+  // (node-tfhe still builds a wasm path from `__dirname` even though the read itself is inlined above.)
+  banner: {
+    js: 'import{createRequire as __cr}from"node:module";import{fileURLToPath as __fu}from"node:url";import{dirname as __dn}from"node:path";' +
+      "const require=__cr(import.meta.url),__filename=__fu(import.meta.url),__dirname=__dn(__filename);",
+  },
   plugins: [inlineWasm],
   logLevel: "warning",
 };
