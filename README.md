@@ -45,6 +45,8 @@ Everything that moves money is Fhenix's audited wrapper code, unchanged. We only
 | `private_usdc_send` | Encrypts the amount with Fhenix (bound to the sender + our contract), proposes the private transfer. |
 | `private_usdc_withdraw` | Proposes a withdrawal of an amount, or of everything. |
 | `private_usdc_claim` | Gets Fhenix's decryption proof and proposes the claim that pays out USDC. |
+| `private_usdc_balance_permit` | Prepares a Fhenix viewing permit (EIP-712) for the user's wallet to sign in PayBox. No transaction. |
+| `private_usdc_balance` | Takes the permit + signature and decrypts the user's own Private USDC balance. Read-only. |
 
 The plugin never holds keys or signs. Every write is an unsigned proposal that PayBox simulates and the user approves.
 
@@ -84,10 +86,16 @@ pnpm install
 pnpm test     # PayBox checks: typecheck, deterministic build, conformance
 pnpm unit
 pnpm bench    # real Fhenix encryption timing; moves no money
+
+# balance viewing end to end against Fhenix's mocks (needs the local chain first):
+#   cd ../contracts && pnpm exec hardhat node --network hardhat
+node --import tsx test/view-local.ts
+# permit + signature checks against the live chains (no money, throwaway key):
+node --import tsx test/permit-live.ts
 ```
 
 ## Open questions to settle before mainnet
 
 1. **Does encryption fit PayBox's 10-second limit and 10 MiB bundle?** `pnpm bench` answers this. If not, the fallback is a small encryption service we host, which the plugin calls.
-2. **Viewing your private balance** needs a signed Fhenix permit. Not in v1; `unshieldAll` covers withdrawing without knowing the balance.
+2. **Viewing your private balance** works in two calls: `private_usdc_balance_permit` returns EIP-712 data that the agent has PayBox sign (`request_wallet_sign`, op `typedData`), then `private_usdc_balance` decrypts. The permit (scoped to this contract, expiring, default 30 min) carries the sealing key between the two stateless calls, so the permit + signature pair must stay private. Checked live on all four chains up to the decrypt step, and end to end against Fhenix's mocks (`plugin/test/view-local.ts`). Not yet checked against Fhenix's live decryption, which needs a deployed contract.
 3. **Deployment** (deployer key, testnet first) — steps will be added once tests pass.

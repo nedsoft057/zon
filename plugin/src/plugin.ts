@@ -7,12 +7,14 @@ import { ZERO, type Network, type NetworkKey } from "./config.js";
 import { deployed, erc20Abi, formatUsdc, network, parseAddress, parseUsdc, publicClient, tokenAbi } from "./chain.js";
 import { decryptClaim, encryptAmount, Timeout, withTimeout } from "./cofhe.js";
 import { evmOutputSchema, proposeEvm } from "./paybox.js";
+import { PERMIT_DEFAULT_MINUTES, PERMIT_MAX_MINUTES, preparePermit, viewBalance } from "./view.js";
 
 const PROTOCOL_VERSION = "2026-07-28";
 
 /** Hosted calls get 10 s in total. Leave room for sandbox start-up and the reply. */
 const ENCRYPT_BUDGET_MS = 7_500;
 const DECRYPT_BUDGET_MS = 6_500;
+const VIEW_BUDGET_MS = 6_500;
 
 const networkArg = z.enum(["arbitrum", "arbitrum-sepolia", "ethereum", "sepolia"]).default("arbitrum")
   .describe(
@@ -105,6 +107,68 @@ function createServer() {
       ...(w ? [`Wallet ${w}: ${out.wallet_usdc} USDC public · ${out.wallet_deposited_usdc} USDC deposited so far · ${out.pending_claims} withdrawal(s) to claim`] : []),
     ];
     return { content: [{ type: "text" as const, text: lines.join("\n") }], structuredContent: out };
+  });
+
+  // ── view own balance (two calls: permit, then balance) ─────────────────────
+  server.registerTool("private_usdc_balance_permit", {
+    title: "Private USDC: prepare a balance-viewing permit",
+    description:
+      "Step 1 of 2 to show the user their own Private USDC balance, which is encrypted on-chain. Returns EIP-712 typed data and a permit. " +
+      "Next: have PayBox sign `typed_data` with this same wallet (request_wallet_sign, op \"typedData\"; signing costs nothing and sends no " +
+      "transaction), then call private_usdc_balance with `permit` and the signature. The permit only allows reading this wallet's Private " +
+      "USDC balance, cannot move funds, and expires. Anyone holding both the permit and the signature can read the balance until then, so do not share them.",
+    inputSchema: z.object({
+      network: networkArg,
+      wallet: walletArg,
+      minutes: z.number().int().min(5).max(PERMIT_MAX_MINUTES).optional()
+        .describe(`How long the permit stays valid, in minutes. Default ${PERMIT_DEFAULT_MINUTES}.`),
+    }).strict(),
+    outputSchema: z.object({
+      network: z.string(), wallet: z.string(), expires_at: z.string(),
+      typed_data: z.record(z.string(), z.unknown()), permit: z.string(),
+    }).strict(),
+    annotations: READ,
+  }, async ({ network: key, wallet, minutes }) => {
+    const n = network(key as NetworkKey);
+    const token = deployed(n);
+    const w = parseAddress(wallet, "wallet");
+    const p = await preparePermit(n, w, token, minutes ?? PERMIT_DEFAULT_MINUTES);
+    const out = { network: n.label, wallet: w, expires_at: p.expiresAt, typed_data: p.typedData, permit: p.permit };
+    return {
+      content: [{ type: "text" as const, text:
+        `Viewing permit for ${w} on ${n.label}, valid until ${p.expiresAt}. Sign typed_data with this wallet in PayBox (no transaction, no fee), ` +
+        `then call private_usdc_balance with the permit and the signature.` }],
+      structuredContent: out,
+    };
+  });
+
+  server.registerTool("private_usdc_balance", {
+    title: "Private USDC: show my balance",
+    description:
+      "Step 2 of 2: decrypts the user's own Private USDC balance with a permit from private_usdc_balance_permit and the wallet's signature of " +
+      "its typed_data. Fhenix re-encrypts the balance so only this permit can read it; the balance is never published on-chain. " +
+      "Show the result only to the user. Read-only.",
+    inputSchema: z.object({
+      network: networkArg,
+      wallet: walletArg,
+      permit: z.string().max(4096).describe("The `permit` value from private_usdc_balance_permit, unchanged."),
+      signature: z.string().max(132).describe("The wallet's 65-byte hex signature of that permit's typed_data."),
+    }).strict(),
+    outputSchema: z.object({ network: z.string(), wallet: z.string(), balance_usdc: z.string() }).strict(),
+    annotations: READ,
+  }, async ({ network: key, wallet, permit, signature }) => {
+    const n = network(key as NetworkKey);
+    const token = deployed(n);
+    const w = parseAddress(wallet, "wallet");
+    let units: bigint;
+    try {
+      units = await withTimeout(viewBalance(n, w, token, permit, signature, VIEW_BUDGET_MS), VIEW_BUDGET_MS, "Decrypting the balance");
+    } catch (e) {
+      if (e instanceof Timeout) throw new Error("Fhenix took too long to decrypt the balance this time. Try again with the same permit and signature.");
+      throw e;
+    }
+    const out = { network: n.label, wallet: w, balance_usdc: formatUsdc(units) };
+    return { content: [{ type: "text" as const, text: `Private USDC balance of ${w} on ${n.label}: ${out.balance_usdc} USDC` }], structuredContent: out };
   });
 
   // ── deposit ────────────────────────────────────────────────────────────────

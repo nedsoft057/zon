@@ -1,5 +1,5 @@
 import { createPublicClient, createWalletClient, getAddress, http, isAddress, type Address, type PublicClient } from "viem";
-import { arbitrum, arbitrumSepolia, mainnet, sepolia } from "viem/chains";
+import { arbitrum, arbitrumSepolia, hardhat, mainnet, sepolia } from "viem/chains";
 import { NETWORKS, ZERO, type Network, type NetworkKey } from "./config.js";
 
 export const RPC_TIMEOUT_MS = 4_000;
@@ -16,6 +16,7 @@ export const tokenAbi = [
   { type: "function", name: "perUserShieldCap", stateMutability: "view", inputs: [], outputs: [{ type: "uint256" }] },
   { type: "function", name: "totalShieldCap", stateMutability: "view", inputs: [], outputs: [{ type: "uint256" }] },
   { type: "function", name: "shieldedBy", stateMutability: "view", inputs: [{ type: "address" }], outputs: [{ type: "uint256" }] },
+  { type: "function", name: "confidentialBalanceOf", stateMutability: "view", inputs: [{ name: "account", type: "address" }], outputs: [{ type: "bytes32" }] },
   { type: "function", name: "paused", stateMutability: "view", inputs: [], outputs: [{ type: "bool" }] },
   { type: "function", name: "underlying", stateMutability: "view", inputs: [], outputs: [{ type: "address" }] },
 ] as const;
@@ -45,11 +46,12 @@ export function parseAddress(value: string, what: string): Address {
   return a;
 }
 
-const VIEM_CHAINS = { arbitrum, "arbitrum-sepolia": arbitrumSepolia, ethereum: mainnet, sepolia } as const;
+// hardhat is only reachable from local integration tests; tools offer the networks in config.ts.
+const VIEM_CHAINS = [arbitrum, arbitrumSepolia, mainnet, sepolia, hardhat];
 
 function viemChain(n: Network) {
-  const c = VIEM_CHAINS[n.key];
-  if (c.id !== n.chainId) throw new Error("Chain mismatch.");
+  const c = VIEM_CHAINS.find(c => c.id === n.chainId);
+  if (!c) throw new Error(`Unsupported chain ${n.chainId}.`);
   return c;
 }
 

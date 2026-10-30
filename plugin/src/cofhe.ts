@@ -1,20 +1,23 @@
 import { createCofheClient, createCofheConfig } from "@cofhe/sdk/node";
 import { Encryptable } from "@cofhe/sdk";
-import { arbitrum, arbSepolia, ethereum, sepolia } from "@cofhe/sdk/chains";
+import { arbitrum, arbSepolia, ethereum, hardhat, sepolia } from "@cofhe/sdk/chains";
 import type { Address, Hex } from "viem";
 import { publicClient, watchOnlyWallet } from "./chain.js";
 import type { Network } from "./config.js";
 
-/** Fhenix's own chain definitions (CoFHE, verifier and threshold-network URLs) from the official SDK. */
-const COFHE_CHAINS = { arbitrum, "arbitrum-sepolia": arbSepolia, ethereum, sepolia } as const;
+/**
+ * Fhenix's own chain definitions (CoFHE, verifier and threshold-network URLs) from the official SDK.
+ * hardhat (Fhenix mocks) is only reachable from local integration tests.
+ */
+const COFHE_CHAINS = [arbitrum, arbSepolia, ethereum, sepolia, hardhat];
 
 function cofheChain(n: Network) {
-  const c = COFHE_CHAINS[n.key];
-  if (c.id !== n.chainId) throw new Error("CoFHE chain mismatch.");
+  const c = COFHE_CHAINS.find(c => c.id === n.chainId);
+  if (!c) throw new Error(`Fhenix CoFHE does not support chain ${n.chainId}.`);
   return c;
 }
 
-async function connectedClient(n: Network, account: Address) {
+export async function connectedClient(n: Network, account: Address) {
   const client = createCofheClient(
     createCofheConfig({
       supportedChains: [cofheChain(n)],
