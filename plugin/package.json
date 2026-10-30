@@ -1,0 +1,35 @@
+{
+  "name": "private-send",
+  "version": "0.1.0",
+  "private": true,
+  "description": "PayBox plugin: private USDC payments on Arbitrum with encrypted amounts (Fhenix CoFHE).",
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": "24.x",
+    "pnpm": "11.11.0"
+  },
+  "packageManager": "pnpm@11.11.0",
+  "scripts": {
+    "dev": "tsx src/plugin.ts",
+    "build": "node scripts/build.mjs",
+    "conformance": "node scripts/conformance.mjs",
+    "test": "node scripts/test.mjs",
+    "typecheck": "tsc --noEmit",
+    "unit": "node --import tsx --test test/*.test.ts",
+    "bench": "node scripts/bench.mjs"
+  },
+  "dependencies": {
+    "@cofhe/sdk": "1.0.1",
+    "@modelcontextprotocol/server": "2.0.0",
+    "viem": "2.38.6",
+    "zod": "4.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "24.12.2",
+    "ajv": "8.20.0",
+    "esbuild": "0.28.2",
+    "tsx": "4.23.12",
+    "typescript": "5.9.3"
+  }
+}

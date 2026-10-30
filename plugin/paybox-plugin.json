@@ -1,0 +1,6 @@
+{
+  "tool": "private_usdc_info",
+  "arguments": {
+    "network": "arbitrum"
+  }
+}

@@ -1,0 +1,66 @@
+name: ci
+
+on:
+  push:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  contracts:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: contracts
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.28.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.21.0
+      - run: pnpm install --frozen-lockfile
+      - name: Compile
+        run: pnpm exec hardhat compile
+      - name: PrivateSendUSDC tests
+        run: pnpm exec hardhat test --network hardhat test/PrivateSendUSDC.test.ts
+      - name: Fhenix's own wrapper tests (same environment)
+        run: pnpm exec hardhat test --network hardhat test/FHERC20ERC20Wrapper.test.ts
+
+  plugin:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: plugin
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.11.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.21.0
+      - name: Install
+        run: |
+          if [ -f pnpm-lock.yaml ]; then pnpm install --frozen-lockfile; else pnpm install; fi
+      - name: node-tfhe layout
+        run: |
+          d=$(dirname "$(node -e "console.log(require.resolve('node-tfhe/package.json',{paths:[require.resolve('@cofhe/sdk/package.json')]}))")")
+          ls -la "$d"; grep -n "readFileSync" "$d"/*.js | head
+      - name: PayBox starter checks (typecheck, deterministic build x2, conformance)
+        run: pnpm test
+      - name: Unit tests
+        run: pnpm unit
+      - name: Bundle size
+        run: ls -la dist/plugin.mjs
+      - name: Live encryption benchmark (no funds, no keys)
+        run: pnpm bench
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: plugin-build
+          path: |
+            plugin/dist/plugin.mjs
+            plugin/pnpm-lock.yaml

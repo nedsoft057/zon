@@ -1,0 +1,12 @@
+# ERC20ConfidentialLib is deployed once per chain and linked by address into every consumer.
+# Explorer source verification reproduces the appended metadata hash from the exact source
+# text, so any reformat of this file invalidates verification of the instances deployed from
+# it, even though the executable code is unaffected. Keep it out of the formatter so that
+# only deliberate source changes (which imply a redeploy) can move the hash.
+contracts/ERC20Confidential/ERC20ConfidentialLib.sol
+
+# Generated
+artifacts/
+cache/
+typechain-types/
+deployments/

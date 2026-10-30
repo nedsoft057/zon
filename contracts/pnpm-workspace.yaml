@@ -1,0 +1,10 @@
+# pnpm 10+ does not run dependency lifecycle scripts unless they are approved here.
+# None of our dependencies need one: keccak and secp256k1 ship prebuilt binaries for
+# every platform we use (their install script is `node-gyp-build || exit 0`), and
+# @fhenixprotocol/cofhe-contracts' postinstall only prints a migration notice.
+onlyBuiltDependencies: []
+
+ignoredBuiltDependencies:
+  - "@fhenixprotocol/cofhe-contracts"
+  - keccak
+  - secp256k1
