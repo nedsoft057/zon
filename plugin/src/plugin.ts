@@ -14,8 +14,11 @@ const PROTOCOL_VERSION = "2026-07-28";
 const ENCRYPT_BUDGET_MS = 7_500;
 const DECRYPT_BUDGET_MS = 6_500;
 
-const networkArg = z.enum(["arbitrum", "arbitrum-sepolia"]).default("arbitrum")
-  .describe("arbitrum = Arbitrum One mainnet (real money). arbitrum-sepolia = free testnet.");
+const networkArg = z.enum(["arbitrum", "arbitrum-sepolia", "ethereum", "sepolia"]).default("arbitrum")
+  .describe(
+    "arbitrum = Arbitrum One mainnet (real money, low fees; the default). ethereum = Ethereum mainnet (real money, much higher fees). " +
+    "arbitrum-sepolia / sepolia = free testnets. Private USDC on one network is separate from the others.",
+  );
 const addressArg = (what: string) => z.string().max(42).describe(what);
 const usdcArg = (what: string) => z.string().max(20).describe(`${what} in USDC as a decimal string, e.g. "12.50".`);
 const walletArg = addressArg("The user's own PayBox EVM wallet address (public). It is the account that will sign.");
@@ -65,7 +68,7 @@ function createServer() {
   server.registerTool("private_usdc_info", {
     title: "Private USDC: status",
     description:
-      "Status of Private USDC (confidential USDC for private payments on Arbitrum): contract address, whether deposits are open, deposit caps, " +
+      "Status of Private USDC (confidential USDC for private payments on Arbitrum and Ethereum): contract address, whether deposits are open, deposit caps, " +
       "and, if a wallet is given, its public USDC balance, how much it has deposited and any withdrawals waiting to be claimed. " +
       "Encrypted balances cannot be read here. Read-only. " + PRIVACY_NOTE,
     inputSchema: z.object({ network: networkArg, wallet: walletArg.optional() }).strict(),

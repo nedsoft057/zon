@@ -1,5 +1,5 @@
 import { createPublicClient, createWalletClient, getAddress, http, isAddress, type Address, type PublicClient } from "viem";
-import { arbitrum, arbitrumSepolia } from "viem/chains";
+import { arbitrum, arbitrumSepolia, mainnet, sepolia } from "viem/chains";
 import { NETWORKS, ZERO, type Network, type NetworkKey } from "./config.js";
 
 export const RPC_TIMEOUT_MS = 4_000;
@@ -45,7 +45,13 @@ export function parseAddress(value: string, what: string): Address {
   return a;
 }
 
-const viemChain = (n: Network) => (n.chainId === arbitrum.id ? arbitrum : arbitrumSepolia);
+const VIEM_CHAINS = { arbitrum, "arbitrum-sepolia": arbitrumSepolia, ethereum: mainnet, sepolia } as const;
+
+function viemChain(n: Network) {
+  const c = VIEM_CHAINS[n.key];
+  if (c.id !== n.chainId) throw new Error("Chain mismatch.");
+  return c;
+}
 
 export function publicClient(n: Network): PublicClient {
   return createPublicClient({ chain: viemChain(n), transport: http(n.rpcUrl, { timeout: RPC_TIMEOUT_MS, retryCount: 0 }) }) as PublicClient;

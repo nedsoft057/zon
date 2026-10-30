@@ -28,4 +28,12 @@ test("config: USDC addresses match Circle's published addresses", () => {
   assert.equal(NETWORKS["arbitrum-sepolia"].usdc, "0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d");
   assert.equal(NETWORKS.arbitrum.chainId, 42161);
   assert.equal(NETWORKS["arbitrum-sepolia"].chainId, 421614);
+  assert.equal(NETWORKS.ethereum.usdc, "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48");
+  assert.equal(NETWORKS.sepolia.usdc, "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238");
+  assert.equal(NETWORKS.ethereum.chainId, 1);
+  assert.equal(NETWORKS.sepolia.chainId, 11155111);
+});
+
+test("config: every network key matches its entry", () => {
+  for (const [k, n] of Object.entries(NETWORKS)) assert.equal(n.key, k);
 });

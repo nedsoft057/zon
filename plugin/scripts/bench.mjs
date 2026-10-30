@@ -7,7 +7,7 @@ import { common } from "./esbuild-common.mjs";
 
 await build({ ...common, entryPoints: ["test/bench-entry.ts"], outfile: "dist/bench.mjs" });
 const results = [];
-for (const net of process.argv.slice(2).length ? process.argv.slice(2) : ["arbitrum-sepolia", "arbitrum"]) {
+for (const net of process.argv.slice(2).length ? process.argv.slice(2) : ["arbitrum-sepolia", "arbitrum", "sepolia", "ethereum"]) {
   for (let run = 1; run <= 3; run++) {
     const t0 = Date.now();
     try {

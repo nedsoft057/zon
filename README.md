@@ -1,6 +1,6 @@
 # PayBox Private Send
 
-A PayBox plugin for private USDC payments on Arbitrum. When a user tells their AI "send 20 USDC privately to 0x…", the agent finds this plugin, and the payment amount is **encrypted on-chain** with Fhenix CoFHE.
+A PayBox plugin for private USDC payments on Arbitrum and Ethereum, the chains where Fhenix CoFHE runs (it is not on Base mainnet). When a user tells their AI "send 20 USDC privately to 0x…", the agent finds this plugin, and the payment amount is **encrypted on-chain** with Fhenix CoFHE.
 
 **Status: beta, unaudited.** Built on Fhenix's audited `FHERC20ERC20Wrapper` (Consensys Diligence), with launch guard rails added on top.
 
@@ -56,13 +56,15 @@ All in `plugin/src/config.ts`, one place:
 |---|---|---|
 | USDC, Arbitrum One | `0xaf88d065e77c8cC2239327C5EDb3A432268e5831` | [Circle](https://developers.circle.com/stablecoins/usdc-contract-addresses) |
 | USDC, Arbitrum Sepolia | `0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d` | [Circle](https://developers.circle.com/stablecoins/usdc-contract-addresses) |
+| USDC, Ethereum | `0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48` | [Circle](https://developers.circle.com/stablecoins/usdc-contract-addresses) |
+| USDC, Ethereum Sepolia | `0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238` | [Circle](https://developers.circle.com/stablecoins/usdc-contract-addresses) |
 | CoFHE address book (inside Fhenix's FHE.sol) | `0xC0F4e00E531a2B086492Ae3DCC1515038307196b` | Fhenix `cofhe-contracts`, compiled in, not set by us |
-| PrivateSendUSDC | *not deployed yet* (zero address = every money tool refuses) | Filled in after our own deploy |
+| PrivateSendUSDC | *not deployed yet on any of the four networks* (zero address = every money tool refuses) | Filled in after our own deploy, one per network |
 
 Fhenix service URLs come from Fhenix's official SDK (`@cofhe/sdk/chains`), not from us.
 
 PayBox portal → network hosts to allow:
-`arb1.arbitrum.io`, `sepolia-rollup.arbitrum.io`, `cofhe.mainnet.fhenix.zone`, `cofhe-vrf.mainnet.fhenix.zone`, `cofhe-tn.mainnet.fhenix.zone`, `testnet-cofhe.fhenix.zone`, `testnet-cofhe-vrf.fhenix.zone`, `testnet-cofhe-tn.fhenix.zone`
+`arb1.arbitrum.io`, `sepolia-rollup.arbitrum.io`, `ethereum-rpc.publicnode.com`, `ethereum-sepolia-rpc.publicnode.com`, `cofhe.mainnet.fhenix.zone`, `cofhe-vrf.mainnet.fhenix.zone`, `cofhe-tn.mainnet.fhenix.zone`, `testnet-cofhe.fhenix.zone`, `testnet-cofhe-vrf.fhenix.zone`, `testnet-cofhe-tn.fhenix.zone`
 
 ## Run it
 

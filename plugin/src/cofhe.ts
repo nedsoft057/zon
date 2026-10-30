@@ -1,13 +1,15 @@
 import { createCofheClient, createCofheConfig } from "@cofhe/sdk/node";
 import { Encryptable } from "@cofhe/sdk";
-import { arbitrum as cofheArbitrum, arbSepolia as cofheArbSepolia } from "@cofhe/sdk/chains";
+import { arbitrum, arbSepolia, ethereum, sepolia } from "@cofhe/sdk/chains";
 import type { Address, Hex } from "viem";
 import { publicClient, watchOnlyWallet } from "./chain.js";
 import type { Network } from "./config.js";
 
 /** Fhenix's own chain definitions (CoFHE, verifier and threshold-network URLs) from the official SDK. */
+const COFHE_CHAINS = { arbitrum, "arbitrum-sepolia": arbSepolia, ethereum, sepolia } as const;
+
 function cofheChain(n: Network) {
-  const c = n.chainId === 42161 ? cofheArbitrum : cofheArbSepolia;
+  const c = COFHE_CHAINS[n.key];
   if (c.id !== n.chainId) throw new Error("CoFHE chain mismatch.");
   return c;
 }

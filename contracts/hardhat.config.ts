@@ -103,7 +103,9 @@ const config: HardhatUserConfig = {
       accounts: [deployerPrivateKey],
     },
     sepolia: {
-      url: `https://eth-sepolia.g.alchemy.com/v2/${providerApiKey}`,
+      // Keyless public RPC by default (override with SEPOLIA_RPC), like Arbitrum Sepolia below.
+      url: process.env.SEPOLIA_RPC || "https://ethereum-sepolia-rpc.publicnode.com",
+      chainId: 11155111,
       accounts: [deployerPrivateKey],
     },
     arbitrum: {
