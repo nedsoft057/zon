@@ -93,9 +93,3 @@ node --import tsx test/view-local.ts
 # permit + signature checks against the live chains (no money, throwaway key):
 node --import tsx test/permit-live.ts
 ```
-
-## Open questions to settle before mainnet
-
-1. **Does encryption fit PayBox's 10-second limit and 10 MiB bundle?** `pnpm bench` answers this. If not, the fallback is a small encryption service we host, which the plugin calls.
-2. **Viewing your private balance** works in two calls: `private_usdc_balance_permit` returns EIP-712 data that the agent has PayBox sign (`request_wallet_sign`, op `typedData`), then `private_usdc_balance` decrypts. The permit (scoped to this contract, expiring, default 30 min) carries the sealing key between the two stateless calls, so the permit + signature pair must stay private. Checked live on all four chains up to the decrypt step, and end to end against Fhenix's mocks (`plugin/test/view-local.ts`). Not yet checked against Fhenix's live decryption, which needs a deployed contract.
-3. **Deployment** (deployer key, testnet first) — steps will be added once tests pass.
