@@ -112,6 +112,9 @@ pnpm bench    # real Fhenix encryption timing; moves no money
 node --import tsx test/view-local.ts
 # permit + signature checks against the live chains (no money, throwaway key):
 node --import tsx test/permit-live.ts
+# live soak test: random deposits, private sends A⇄B, withdrawals and claims on a real Fhenix network,
+# every decrypted balance checked after every step (unlocks your deployer key from contracts/.env):
+node --import tsx test/soak-live.ts            # SOAK_OPS=60, SOAK_NETWORK=arbitrum-sepolia by default
 # full live run on a testnet (deposit, private send, view balance, withdraw, claim); key must hold testnet USDC:
 DEMO_PRIVATE_KEY=0x... DEMO_RECIPIENT=0x... node --import tsx test/demo-live.ts sepolia
 ```
