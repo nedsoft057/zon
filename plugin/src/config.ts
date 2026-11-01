@@ -38,7 +38,8 @@ export const NETWORKS: Record<NetworkKey, Network> = {
     // Offchain Labs. Source: https://docs.arbitrum.io/build-decentralized-apps/reference/node-providers
     rpcUrl: "https://sepolia-rollup.arbitrum.io/rpc",
     usdc: "0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d",
-    privateUsdc: ZERO,
+    // Deployed 2026-11-01. Owner: 0x79fBe68922074F041Db83F67a9bC0A51df5CdDc9. Record: contracts/deployments/arbitrumSepolia/
+    privateUsdc: "0x934368C5eBD206e3550a95FAAA5174373a94f67b",
   },
   ethereum: {
     key: "ethereum",

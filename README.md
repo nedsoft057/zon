@@ -64,7 +64,8 @@ All in `plugin/src/config.ts`, one place:
 | USDC, Ethereum Sepolia | `0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238` | [Circle](https://developers.circle.com/stablecoins/usdc-contract-addresses) |
 | CoFHE address book (inside Fhenix's FHE.sol) | `0xC0F4e00E531a2B086492Ae3DCC1515038307196b` | Fhenix `cofhe-contracts`, compiled in, not set by us |
 | PrivateSendUSDC, Ethereum Sepolia | [`0xfd8A60F18F79d6CE7f3a546f528cd70dB0e3A461`](https://sepolia.etherscan.io/address/0xfd8A60F18F79d6CE7f3a546f528cd70dB0e3A461#code) (source verified) | Our deploy, owner `0x79fBe68922074F041Db83F67a9bC0A51df5CdDc9`. Full flow run live, e.g. [a private send](https://sepolia.etherscan.io/tx/0x4f679b1635deebc0dd589130cc537df0e0765264ddc1ed3678caca2953be1dad) |
-| PrivateSendUSDC, other networks | *not deployed yet* (zero address = every money tool refuses) | Filled in after our own deploy, one per network |
+| PrivateSendUSDC, Arbitrum Sepolia | [`0x934368C5eBD206e3550a95FAAA5174373a94f67b`](https://sepolia.arbiscan.io/address/0x934368C5eBD206e3550a95FAAA5174373a94f67b#code) (source verified) | Our deploy, owner `0x79fBe68922074F041Db83F67a9bC0A51df5CdDc9` |
+| PrivateSendUSDC, mainnets | *not deployed yet* (zero address = every money tool refuses) | Filled in after our own deploy, one per network |
 
 Fhenix service URLs come from Fhenix's official SDK (`@cofhe/sdk/chains`), not from us.
 
