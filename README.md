@@ -88,7 +88,7 @@ cd contracts
 pnpm generate              # new deployer key, encrypted with your password into contracts/.env (git-ignored)
 # or: pnpm account:import  # use an existing private key instead
 pnpm account               # show the deployer address and its balances; fund it with gas
-PRIVATE_SEND_OWNER=0xYourMainWallet ETHERSCAN_MAINNET_API_KEY=... pnpm deploy --network sepolia --tags PrivateSendUSDC
+PRIVATE_SEND_OWNER=0xYourMainWallet ETHERSCAN_MAINNET_API_KEY=... pnpm run deploy --network sepolia --tags PrivateSendUSDC
 ```
 
 The deployer only pays gas. `PRIVATE_SEND_OWNER` becomes the contract owner (caps and pause). Mainnets also require `PRIVATE_SEND_USER_CAP`, `PRIVATE_SEND_TOTAL_CAP` and an Etherscan key.

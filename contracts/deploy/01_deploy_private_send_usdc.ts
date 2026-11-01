@@ -12,7 +12,7 @@ import { DeployFunction } from "hardhat-deploy/types";
  *   PRIVATE_SEND_USER_CAP    per-wallet lifetime deposit cap, whole USDC. Testnet default 1000; REQUIRED on mainnets.
  *   PRIVATE_SEND_TOTAL_CAP   cap on total USDC held, whole USDC. Testnet default 100000; REQUIRED on mainnets.
  *
- *   ETHERSCAN_MAINNET_API_KEY=... PRIVATE_SEND_OWNER=0x... pnpm exec hardhat deploy --network arbitrumSepolia --tags PrivateSendUSDC
+ *   ETHERSCAN_MAINNET_API_KEY=... PRIVATE_SEND_OWNER=0x... pnpm run deploy --network arbitrumSepolia --tags PrivateSendUSDC
  *
  * After deploying, copy the address from deployments/<network>/PrivateSendUSDC.json into
  * plugin/src/config.ts (`privateUsdc`) for the matching network.
