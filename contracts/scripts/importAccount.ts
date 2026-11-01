@@ -45,7 +45,7 @@ const setNewEnvConfig = async (existingEnvConfig = {}) => {
 
   // Store in .env
   fs.writeFileSync(envFilePath, stringify(newEnvConfig));
-  console.log("\n📄 Encrypted Private Key saved to packages/hardhat/.env file");
+  console.log("\n📄 Encrypted Private Key saved to contracts/.env file");
   console.log("🪄 Imported wallet address:", wallet.address, "\n");
   console.log("⚠️ Make sure to remember your password! You'll need it to decrypt the private key.");
 };
@@ -59,7 +59,7 @@ async function main() {
 
   const existingEnvConfig = parse(fs.readFileSync(envFilePath).toString());
   if (existingEnvConfig.DEPLOYER_PRIVATE_KEY_ENCRYPTED) {
-    console.log("⚠️ You already have a deployer account. Check the packages/hardhat/.env file");
+    console.log("⚠️ You already have a deployer account. Check the contracts/.env file");
     return;
   }
 

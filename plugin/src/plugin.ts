@@ -64,7 +64,7 @@ async function readState(n: Network, token: Address, wallet?: Address) {
 }
 
 function createServer() {
-  const server = new McpServer({ name: "private-send", version: "0.1.0" }, { supportedProtocolVersions: [PROTOCOL_VERSION] });
+  const server = new McpServer({ name: "zon", version: "0.1.0" }, { supportedProtocolVersions: [PROTOCOL_VERSION] });
 
   // ── read ───────────────────────────────────────────────────────────────────
   server.registerTool("private_usdc_info", {

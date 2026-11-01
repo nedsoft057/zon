@@ -1,8 +1,8 @@
 {
-  "name": "private-send",
+  "name": "zon",
   "version": "0.1.0",
   "private": true,
-  "description": "PayBox plugin: private USDC payments on Arbitrum with encrypted amounts (Fhenix CoFHE).",
+  "description": "Zon: PayBox plugin for private USDC payments on Arbitrum with encrypted amounts (Fhenix CoFHE).",
   "license": "MIT",
   "type": "module",
   "engines": {
