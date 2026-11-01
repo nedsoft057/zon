@@ -2,7 +2,7 @@
 
 Zon is a PayBox plugin for private USDC payments on Arbitrum and Ethereum, the chains where Fhenix CoFHE runs (it is not on Base mainnet). When a user tells their AI "send 20 USDC privately to 0x…", the agent finds this plugin, and the payment amount is **encrypted on-chain** with Fhenix CoFHE.
 
-Website: [zon-one-pager.vercel.app](https://zon-one-pager.vercel.app)
+One-pager: [zon-one-pager.vercel.app](https://zon-one-pager.vercel.app)
 
 **Status: beta, unaudited.** Built on Fhenix's audited `FHERC20ERC20Wrapper` (Consensys Diligence), with launch guard rails added on top.
 
