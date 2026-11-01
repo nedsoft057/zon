@@ -217,4 +217,56 @@ describe("PrivateSendUSDC", function () {
     expect(await plaintextBalance(token, bob.address)).to.equal(USDC(5));
     expect(await plaintextBalance(token, alice.address)).to.equal(0n);
   });
+
+  it("the per-user cap also counts the recipient (no topping someone up past the cap)", async function () {
+    const { token, bob, alice, eve } = await fixture();
+    await token.connect(alice).shield(alice.address, USDC(100));
+    await expect(token.connect(bob).shield(alice.address, USDC(1))).to.be.revertedWithCustomError(
+      token,
+      "PerUserCapExceeded",
+    );
+    await token.connect(bob).shield(eve.address, USDC(60));
+    await expect(token.connect(alice).shield(eve.address, USDC(41))).to.be.revertedWithCustomError(
+      token,
+      "PerUserCapExceeded",
+    );
+    expect(await token.shieldedTo(alice.address)).to.equal(USDC(100));
+    expect(await token.shieldedTo(eve.address)).to.equal(USDC(60));
+  });
+
+  it("USDC sent straight to the contract does not count toward the total cap", async function () {
+    const { token, usdc, bob, alice, eve } = await fixture();
+    await token.connect(bob).shield(bob.address, USDC(100));
+    await token.connect(alice).shield(alice.address, USDC(100));
+    await usdc.connect(eve).transfer(await token.getAddress(), USDC(50)); // griefing attempt
+    await token.connect(eve).shield(eve.address, USDC(50)); // still allowed: 250 counted of 250
+    expect(await token.totalShielded()).to.equal(USDC(250));
+    await expect(token.connect(eve).shield(eve.address, USDC(1))).to.be.revertedWithCustomError(
+      token,
+      "TotalCapExceeded",
+    );
+  });
+
+  it("paid-out claims free room under the total cap", async function () {
+    const { token, bob, aliceClient, alice } = await fixture();
+    await token.connect(alice).shield(alice.address, USDC(100));
+    await token.connect(bob).shield(bob.address, USDC(100));
+    expect(await token.totalShielded()).to.equal(USDC(200));
+    const tx = await token.connect(alice)["unshield(address,address,uint64)"](alice.address, alice.address, USDC(30));
+    expect(await claimAll(token, tx, alice, aliceClient)).to.equal(USDC(30));
+    expect(await token.totalShielded()).to.equal(USDC(170));
+  });
+
+  it("ownership cannot be renounced", async function () {
+    const { token, owner, eve } = await fixture();
+    await expect(token.connect(owner).renounceOwnership()).to.be.revertedWithCustomError(
+      token,
+      "OwnershipCannotBeRenounced",
+    );
+    await expect(token.connect(eve).renounceOwnership()).to.be.revertedWithCustomError(
+      token,
+      "OwnableUnauthorizedAccount",
+    );
+    expect(await token.owner()).to.equal(owner.address);
+  });
 });

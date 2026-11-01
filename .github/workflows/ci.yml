@@ -26,6 +26,8 @@ jobs:
         run: pnpm exec hardhat compile
       - name: PrivateSendUSDC tests
         run: pnpm exec hardhat test --network hardhat test/PrivateSendUSDC.test.ts
+      - name: PrivateSendUSDC stress test (300 random operations)
+        run: STRESS_OPS=300 pnpm exec hardhat test --network hardhat test/PrivateSendUSDC.stress.test.ts
       - name: Fhenix's own wrapper tests (same environment)
         run: pnpm exec hardhat test --network hardhat test/FHERC20ERC20Wrapper.test.ts
 

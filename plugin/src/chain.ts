@@ -16,6 +16,8 @@ export const tokenAbi = [
   { type: "function", name: "perUserShieldCap", stateMutability: "view", inputs: [], outputs: [{ type: "uint256" }] },
   { type: "function", name: "totalShieldCap", stateMutability: "view", inputs: [], outputs: [{ type: "uint256" }] },
   { type: "function", name: "shieldedBy", stateMutability: "view", inputs: [{ type: "address" }], outputs: [{ type: "uint256" }] },
+  { type: "function", name: "shieldedTo", stateMutability: "view", inputs: [{ type: "address" }], outputs: [{ type: "uint256" }] },
+  { type: "function", name: "totalShielded", stateMutability: "view", inputs: [], outputs: [{ type: "uint256" }] },
   { type: "function", name: "confidentialBalanceOf", stateMutability: "view", inputs: [{ name: "account", type: "address" }], outputs: [{ type: "bytes32" }] },
   { type: "function", name: "paused", stateMutability: "view", inputs: [], outputs: [{ type: "bool" }] },
   { type: "function", name: "underlying", stateMutability: "view", inputs: [], outputs: [{ type: "address" }] },
@@ -68,6 +70,15 @@ export function formatUsdc(units: bigint): string {
   const whole = units / 1_000_000n;
   const frac = (units % 1_000_000n).toString().padStart(6, "0").replace(/0+$/, "");
   return frac ? `${whole}.${frac}` : whole.toString();
+}
+
+/** Deposits and withdrawals are public, so they must be whole USDC: odd amounts like 37.12 make it easy to match a deposit to a later withdrawal. */
+export function parseWholeUsdc(amount: string): bigint {
+  const units = parseUsdc(amount);
+  if (units % 1_000_000n !== 0n) {
+    throw new Error(`Deposits and withdrawals are public, so they must be whole USDC (e.g. "40", not "${amount}"). Odd amounts are easy to match to each other. Private sends can use any amount.`);
+  }
+  return units;
 }
 
 export function parseUsdc(amount: string): bigint {

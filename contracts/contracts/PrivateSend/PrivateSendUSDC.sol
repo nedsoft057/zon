@@ -11,32 +11,41 @@ import { FHERC20ERC20Wrapper } from "../FHERC20/extensions/FHERC20ERC20Wrapper.s
 
 /**
  * @title PrivateSendUSDC
- * @notice Confidential USDC for the PayBox Private Send plugin.
+ * @notice Confidential USDC for the Zon PayBox plugin.
  *
  * All money logic (shield, encrypted transfers, unshield, claim) is Fhenix's audited
  * FHERC20ERC20Wrapper, used unchanged. This contract only adds launch guard rails:
  *
- *  - Deposit caps: a lifetime cap per depositor and a cap on total USDC held.
+ *  - Deposit caps: a lifetime cap per depositor AND per recipient, and a cap on total USDC held.
+ *    The total is tracked internally, so USDC sent straight to the contract cannot fill the cap.
  *  - Pause switch: stops NEW deposits only. Private sends, unshield and claim always work,
  *    so a pause can never trap anyone's money.
  *  - No admin withdraw: the owner can change caps and pause deposits. Nothing else.
  *    There is no function that lets the owner, or anyone, move another person's funds.
+ *    Ownership cannot be renounced, so caps and pause can never be frozen without an owner.
  *  - unshieldAll: lets a holder withdraw their whole confidential balance without first
  *    having to decrypt it (recipients often don't know their exact balance).
  */
 contract PrivateSendUSDC is FHERC20ERC20Wrapper, Ownable2Step, Pausable {
-    /// @notice Max total USDC (underlying units) one address may ever shield. 0 = no deposits.
+    /// @notice Max total USDC (underlying units) one address may ever shield, counted both for the
+    /// address that pays and for the address credited. 0 = no deposits.
     uint256 public perUserShieldCap;
-    /// @notice Max USDC (underlying units) the contract may hold in total.
+    /// @notice Max USDC (underlying units) held for holders at once (deposits minus paid-out claims).
     uint256 public totalShieldCap;
-    /// @notice Lifetime USDC shielded by each address (public anyway: deposits are on-chain).
+    /// @notice Lifetime USDC shielded by each depositor (public anyway: deposits are on-chain).
     mapping(address => uint256) public shieldedBy;
+    /// @notice Lifetime USDC shielded to each recipient.
+    mapping(address => uint256) public shieldedTo;
+    /// @notice USDC held for holders: counted deposits minus claimed payouts. Direct transfers to
+    /// the contract are not counted, so they cannot be used to block deposits.
+    uint256 public totalShielded;
 
     event CapsUpdated(uint256 perUserShieldCap, uint256 totalShieldCap);
 
-    error PerUserCapExceeded(address depositor, uint256 attempted, uint256 cap);
+    error PerUserCapExceeded(address account, uint256 attempted, uint256 cap);
     error TotalCapExceeded(uint256 attemptedTotal, uint256 cap);
     error DirectTokenCallbackDisabled();
+    error OwnershipCannotBeRenounced();
 
     constructor(
         IERC20 usdc,
@@ -55,13 +64,19 @@ contract PrivateSendUSDC is FHERC20ERC20Wrapper, Ownable2Step, Pausable {
     /// @dev Caps count only the part actually pulled in (rounded down to a multiple of {rate}).
     function shield(address to, uint256 amount) public virtual override whenNotPaused returns (sharedEuint64) {
         uint256 counted = amount - (amount % rate());
-        uint256 newUserTotal = shieldedBy[msg.sender] + counted;
-        if (newUserTotal > perUserShieldCap) revert PerUserCapExceeded(msg.sender, newUserTotal, perUserShieldCap);
 
-        uint256 newHeld = IERC20(underlying()).balanceOf(address(this)) + counted;
+        uint256 byTotal = shieldedBy[msg.sender] + counted;
+        if (byTotal > perUserShieldCap) revert PerUserCapExceeded(msg.sender, byTotal, perUserShieldCap);
+        shieldedBy[msg.sender] = byTotal;
+
+        uint256 toTotal = shieldedTo[to] + counted;
+        if (toTotal > perUserShieldCap) revert PerUserCapExceeded(to, toTotal, perUserShieldCap);
+        shieldedTo[to] = toTotal;
+
+        uint256 newHeld = totalShielded + counted;
         if (newHeld > totalShieldCap) revert TotalCapExceeded(newHeld, totalShieldCap);
+        totalShielded = newHeld;
 
-        shieldedBy[msg.sender] = newUserTotal;
         return super.shield(to, amount);
     }
 
@@ -82,6 +97,24 @@ contract PrivateSendUSDC is FHERC20ERC20Wrapper, Ownable2Step, Pausable {
         return FHE.shareEuint64(_unshield(msg.sender, to, balance), msg.sender);
     }
 
+    /// @dev Paid-out claims leave the held total, freeing room under the total cap.
+    function claimUnshielded(bytes32 id, uint64 decryptedAmount, bytes memory decryptionProof) public virtual override {
+        super.claimUnshielded(id, decryptedAmount, decryptionProof);
+        totalShielded -= uint256(decryptedAmount) * rate();
+    }
+
+    /// @dev See {claimUnshielded}.
+    function claimUnshieldedBatch(
+        bytes32[] memory ids,
+        uint64[] memory decryptedAmounts,
+        bytes[] memory decryptionProofs
+    ) public virtual override {
+        super.claimUnshieldedBatch(ids, decryptedAmounts, decryptionProofs);
+        uint256 paid;
+        for (uint256 i = 0; i < decryptedAmounts.length; i++) paid += decryptedAmounts[i];
+        totalShielded -= paid * rate();
+    }
+
     // ── owner controls (caps and pause only) ─────────────────────────────────
 
     function setCaps(uint256 perUserShieldCap_, uint256 totalShieldCap_) external onlyOwner {
@@ -96,5 +129,10 @@ contract PrivateSendUSDC is FHERC20ERC20Wrapper, Ownable2Step, Pausable {
 
     function unpauseDeposits() external onlyOwner {
         _unpause();
+    }
+
+    /// @notice Disabled: without an owner, a pause could never be lifted.
+    function renounceOwnership() public view override onlyOwner {
+        revert OwnershipCannotBeRenounced();
     }
 }

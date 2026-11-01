@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { formatUsdc, parseAddress, parseUsdc } from "../src/chain.js";
+import { formatUsdc, parseAddress, parseUsdc, parseWholeUsdc } from "../src/chain.js";
 import { NETWORKS, ZERO } from "../src/config.js";
 
 test("parseUsdc converts decimals exactly", () => {
@@ -36,4 +36,9 @@ test("config: USDC addresses match Circle's published addresses", () => {
 
 test("config: every network key matches its entry", () => {
   for (const [k, n] of Object.entries(NETWORKS)) assert.equal(n.key, k);
+});
+
+test("deposits and withdrawals must be whole USDC", () => {
+  assert.equal(parseWholeUsdc("40"), 40_000_000n);
+  for (const bad of ["37.12", "0.5", "1.000001"]) assert.throws(() => parseWholeUsdc(bad), bad);
 });

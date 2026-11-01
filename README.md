@@ -32,11 +32,15 @@ plugin/      PayBox plugin (starter 1.0.2 tooling) — src/plugin.ts, src/cofhe.
 
 Everything that moves money is Fhenix's audited wrapper code, unchanged. We only add:
 
-- **Deposit caps**: lifetime cap per wallet and a cap on total USDC held.
+- **Deposit caps**: a lifetime cap counted for both the wallet that pays and the wallet credited, and a cap on total USDC held. The total is tracked internally, so USDC sent straight to the contract cannot block deposits.
 - **Pause switch**: stops new deposits only. Sends, withdrawals and claims keep working, so a pause can never trap funds.
-- **No admin withdraw**: the owner can change caps and pause deposits. That's all. A test fails if any other admin function appears.
+- **No admin withdraw**: the owner can change caps and pause deposits. That's all. A test fails if any other admin function appears. Ownership cannot be renounced, so a pause can always be lifted.
 - **`unshieldAll(to)`**: withdraw a whole private balance without knowing it (needed by people who received a private payment).
 - The ERC-1363 deposit path is switched off (it would skip the caps).
+
+Tested with unit tests for each rule and a randomised stress test (`test/PrivateSendUSDC.stress.test.ts`): 1,000 random deposits, private sends, withdrawals, claims, donations, pauses and attack attempts, checking every balance against an independent model after every step, then draining everything back to zero. Two 1,000-operation runs (722 and 692 transactions) passed exactly.
+
+The plugin keeps deposits and withdrawals to whole USDC, because those amounts are public and odd amounts are easy to match to each other. Privacy here means hidden from the public blockchain: the amount a user types is still seen by their AI assistant, PayBox and the plugin.
 
 ## Plugin tools
 

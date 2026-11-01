@@ -4,7 +4,7 @@ import { encodeFunctionData, type Address, type Hex } from "viem";
 import * as z from "zod/v4";
 
 import { ZERO, type Network, type NetworkKey } from "./config.js";
-import { deployed, erc20Abi, formatUsdc, network, parseAddress, parseUsdc, publicClient, tokenAbi } from "./chain.js";
+import { deployed, erc20Abi, formatUsdc, network, parseAddress, parseUsdc, parseWholeUsdc, publicClient, tokenAbi } from "./chain.js";
 import { decryptClaim, encryptAmount, Timeout, withTimeout } from "./cofhe.js";
 import { evmOutputSchema, proposeEvm } from "./paybox.js";
 import { PERMIT_DEFAULT_MINUTES, PERMIT_MAX_MINUTES, preparePermit, viewBalance } from "./view.js";
@@ -31,6 +31,8 @@ const WRITE = { readOnlyHint: false, destructiveHint: true, idempotentHint: fals
 const PRIVACY_NOTE =
   "What stays private: the amount of a private send and everyone's Private USDC balance. " +
   "What is still public: the sender and recipient addresses of a send, and the amounts of deposits (shield) and withdrawals (claim). " +
+  "Private means hidden from the public blockchain: the amount the user types is still seen by their AI assistant, PayBox and this plugin. " +
+  "To stay hard to trace, deposit round amounts and avoid withdrawing exactly what was just received. " +
   "Beta: deposits are capped. Contract code is open source.";
 
 function caip(n: Network) {
@@ -47,20 +49,23 @@ function propose(n: Network, to: Address, data: Hex, summary: string) {
 
 async function readState(n: Network, token: Address, wallet?: Address) {
   const c = publicClient(n);
+  // Contracts deployed before v2 have no totalShielded / shieldedTo: fall back to their old cap rules.
   const [perUserCap, totalCap, paused, held] = await Promise.all([
     c.readContract({ address: token, abi: tokenAbi, functionName: "perUserShieldCap" }),
     c.readContract({ address: token, abi: tokenAbi, functionName: "totalShieldCap" }),
     c.readContract({ address: token, abi: tokenAbi, functionName: "paused" }),
-    c.readContract({ address: n.usdc, abi: erc20Abi, functionName: "balanceOf", args: [token] }),
+    c.readContract({ address: token, abi: tokenAbi, functionName: "totalShielded" })
+      .catch(() => c.readContract({ address: n.usdc, abi: erc20Abi, functionName: "balanceOf", args: [token] })),
   ]);
   if (!wallet) return { perUserCap, totalCap, paused, held };
-  const [usdcBalance, allowance, shieldedBy, claims] = await Promise.all([
+  const [usdcBalance, allowance, shieldedBy, shieldedTo, claims] = await Promise.all([
     c.readContract({ address: n.usdc, abi: erc20Abi, functionName: "balanceOf", args: [wallet] }),
     c.readContract({ address: n.usdc, abi: erc20Abi, functionName: "allowance", args: [wallet, token] }),
     c.readContract({ address: token, abi: tokenAbi, functionName: "shieldedBy", args: [wallet] }),
+    c.readContract({ address: token, abi: tokenAbi, functionName: "shieldedTo", args: [wallet] }).catch(() => 0n),
     c.readContract({ address: token, abi: tokenAbi, functionName: "getUserClaims", args: [wallet] }),
   ]);
-  return { perUserCap, totalCap, paused, held, usdcBalance, allowance, shieldedBy, claims };
+  return { perUserCap, totalCap, paused, held, usdcBalance, allowance, shieldedBy, shieldedTo, claims };
 }
 
 function createServer() {
@@ -178,20 +183,21 @@ function createServer() {
       "Step 1 before any private payment: turn the user's public USDC into Private USDC. The deposit amount is public; after this, " +
       "balances and send amounts are encrypted. If the contract is not yet allowed to take the USDC, this first proposes an approval " +
       "for exactly that amount; call it again after the approval confirms to propose the deposit. " + PRIVACY_NOTE,
-    inputSchema: z.object({ network: networkArg, wallet: walletArg, amount: usdcArg("Amount to deposit") }).strict(),
+    inputSchema: z.object({ network: networkArg, wallet: walletArg, amount: usdcArg("Whole USDC amount to deposit (deposits are public, so no cents)") }).strict(),
     outputSchema: evmOutputSchema,
     annotations: WRITE,
   }, async ({ network: key, wallet, amount }) => {
     const n = network(key as NetworkKey);
     const token = deployed(n);
     const w = parseAddress(wallet, "wallet");
-    const units = parseUsdc(amount);
+    const units = parseWholeUsdc(amount);
     const s = await readState(n, token, w);
 
     if (s.paused) throw new Error("Deposits are paused right now. Private sends and withdrawals still work. Nothing was proposed.");
     if (s.usdcBalance! < units) throw new Error(`Wallet has ${formatUsdc(s.usdcBalance!)} USDC on ${n.label}, less than ${amount}. Nothing was proposed.`);
-    if (s.shieldedBy! + units > s.perUserCap) {
-      throw new Error(`Beta cap: each wallet can deposit up to ${formatUsdc(s.perUserCap)} USDC in total; this wallet has deposited ${formatUsdc(s.shieldedBy!)}. Nothing was proposed.`);
+    const used = s.shieldedBy! > s.shieldedTo! ? s.shieldedBy! : s.shieldedTo!;
+    if (used + units > s.perUserCap) {
+      throw new Error(`Beta cap: each wallet can deposit and receive up to ${formatUsdc(s.perUserCap)} USDC in deposits in total; this wallet is at ${formatUsdc(used)}. Nothing was proposed.`);
     }
     if (s.held + units > s.totalCap) {
       throw new Error(`Beta cap: the contract holds ${formatUsdc(s.held)} of ${formatUsdc(s.totalCap)} USDC allowed. Try a smaller amount. Nothing was proposed.`);
@@ -255,7 +261,7 @@ function createServer() {
       network: networkArg,
       wallet: walletArg,
       to: addressArg("Where the USDC should go. Defaults to the wallet itself.").optional(),
-      amount: usdcArg("Amount to withdraw. Omit to withdraw everything").optional(),
+      amount: usdcArg("Whole USDC amount to withdraw (withdrawals are public, so no cents). Omit to withdraw everything").optional(),
     }).strict(),
     outputSchema: evmOutputSchema,
     annotations: WRITE,
@@ -269,7 +275,7 @@ function createServer() {
       const data = encodeFunctionData({ abi: tokenAbi, functionName: "unshieldAll", args: [dest] });
       return propose(n, token, data, `Withdraw the whole Private USDC balance of ${w} to ${dest}. Then call private_usdc_claim (for ${dest}) in about a minute.`);
     }
-    const units = parseUsdc(amount);
+    const units = parseWholeUsdc(amount);
     const data = encodeFunctionData({ abi: tokenAbi, functionName: "unshield", args: [w, dest, units] });
     return propose(n, token, data,
       `Withdraw ${amount} Private USDC from ${w} to ${dest}. If the private balance is lower, nothing is withdrawn. Then call private_usdc_claim (for ${dest}) in about a minute.`);
@@ -280,7 +286,7 @@ function createServer() {
     title: "Private USDC: claim a withdrawal",
     description:
       "Finish a withdrawal: gets Fhenix's decryption proof for the oldest pending withdrawal of this address and proposes the claim that " +
-      "pays out the USDC. If Fhenix is still decrypting, it says so; try again in a minute. Only the withdrawal's recipient (or their operator) can claim.",
+      "pays out the USDC. If Fhenix is still decrypting, it says so; try again in a minute. The USDC always goes to the withdrawal's recipient, whoever submits the claim.",
     inputSchema: z.object({ network: networkArg, wallet: walletArg.describe("The address the withdrawal pays out to. It signs the claim.") }).strict(),
     outputSchema: evmOutputSchema,
     annotations: WRITE,
