@@ -50,6 +50,13 @@ const deployConfidentialLib: DeployFunction = async function (hre: HardhatRuntim
   const { deployer } = await hre.getNamedAccounts();
   const { deploy, log } = hre.deployments;
 
+  if (hre.network.live && !deployer) {
+    throw new Error(
+      `No deployer key loaded for '${hre.network.name}'. Run \`pnpm generate\` (or \`pnpm account:import\`) once, ` +
+        `then deploy with \`pnpm run deploy --network ${hre.network.name}\`, which asks for your password.`,
+    );
+  }
+
   // Forced-verification precondition. Fail BEFORE deploying: we never want an unverifiable
   // library on a live chain. (process.env is checked directly, not the hardhat config value,
   // because the config carries a shared fallback key that must not be relied on for

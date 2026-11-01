@@ -16,10 +16,10 @@ import "@cofhe/hardhat-plugin";
 // If not set, it uses ours Alchemy's default API key.
 // You can get your own at https://dashboard.alchemyapi.io
 const providerApiKey = process.env.ALCHEMY_API_KEY || "oKxs-03sij-U_N0iOlrSsZFr29-IqbuF";
-// If not set, it uses the hardhat account 0 private key.
-// You can generate a random account with `yarn generate` or `yarn account:import` to import your existing PK
-const deployerPrivateKey =
-  process.env.__RUNTIME_DEPLOYER_PRIVATE_KEY ?? "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
+// Set only by `pnpm run deploy`, which decrypts the key made with `pnpm generate` / `pnpm account:import`.
+// Live networks get no account without it, so they can never fall back to Hardhat's public test key.
+const deployerPrivateKey = process.env.__RUNTIME_DEPLOYER_PRIVATE_KEY;
+const liveAccounts = deployerPrivateKey ? [deployerPrivateKey] : [];
 // If not set, it uses our block explorers default API keys.
 const etherscanApiKey = process.env.ETHERSCAN_MAINNET_API_KEY || "DNXJA8RX2Q3VZ4URQIWP7Z68CJXQZSC6AW";
 const etherscanOptimisticApiKey = process.env.ETHERSCAN_OPTIMISTIC_API_KEY || "RM62RDISS1RH448ZY379NX625ASG1N633R";
@@ -100,25 +100,25 @@ const config: HardhatUserConfig = {
       // Override with MAINNET_RPC. The fallback needs your own ALCHEMY_API_KEY: the default
       // shared key is IP-whitelisted (and the old eth-mainnet.alchemyapi.io host no longer resolves).
       url: process.env.MAINNET_RPC || `https://eth-mainnet.g.alchemy.com/v2/${providerApiKey}`,
-      accounts: [deployerPrivateKey],
+      accounts: liveAccounts,
     },
     sepolia: {
       // Keyless public RPC by default (override with SEPOLIA_RPC), like Arbitrum Sepolia below.
       url: process.env.SEPOLIA_RPC || "https://ethereum-sepolia-rpc.publicnode.com",
       chainId: 11155111,
-      accounts: [deployerPrivateKey],
+      accounts: liveAccounts,
     },
     arbitrum: {
       // Override with ARBITRUM_RPC. The fallback needs your own ALCHEMY_API_KEY, as above.
       url: process.env.ARBITRUM_RPC || `https://arb-mainnet.g.alchemy.com/v2/${providerApiKey}`,
-      accounts: [deployerPrivateKey],
+      accounts: liveAccounts,
     },
     arbitrumSepolia: {
       // The default shared Alchemy key is IP-whitelisted and rejects other hosts;
       // fall back to a keyless public RPC (override with ARBITRUM_SEPOLIA_RPC).
       url: process.env.ARBITRUM_SEPOLIA_RPC || "https://arbitrum-sepolia-rpc.publicnode.com",
       chainId: 421614,
-      accounts: [deployerPrivateKey],
+      accounts: liveAccounts,
     },
   },
   // configuration for harhdat-verify plugin

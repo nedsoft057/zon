@@ -14,7 +14,7 @@ import type { Network } from "./config.js";
 // whoever has both read this wallet's Private USDC balance (nothing else, no spending) until it expires.
 
 export const PERMIT_DEFAULT_MINUTES = 30;
-export const PERMIT_MAX_MINUTES = 24 * 60;
+export const PERMIT_MAX_MINUTES = 60;
 
 const ZERO_HANDLE = `0x${"00".repeat(32)}` as const;
 
