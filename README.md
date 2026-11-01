@@ -63,7 +63,8 @@ All in `plugin/src/config.ts`, one place:
 | USDC, Ethereum | `0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48` | [Circle](https://developers.circle.com/stablecoins/usdc-contract-addresses) |
 | USDC, Ethereum Sepolia | `0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238` | [Circle](https://developers.circle.com/stablecoins/usdc-contract-addresses) |
 | CoFHE address book (inside Fhenix's FHE.sol) | `0xC0F4e00E531a2B086492Ae3DCC1515038307196b` | Fhenix `cofhe-contracts`, compiled in, not set by us |
-| PrivateSendUSDC | *not deployed yet on any of the four networks* (zero address = every money tool refuses) | Filled in after our own deploy, one per network |
+| PrivateSendUSDC, Ethereum Sepolia | `0xfd8A60F18F79d6CE7f3a546f528cd70dB0e3A461` | Our deploy, owner `0x79fBe68922074F041Db83F67a9bC0A51df5CdDc9` |
+| PrivateSendUSDC, other networks | *not deployed yet* (zero address = every money tool refuses) | Filled in after our own deploy, one per network |
 
 Fhenix service URLs come from Fhenix's official SDK (`@cofhe/sdk/chains`), not from us.
 

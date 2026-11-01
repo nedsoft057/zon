@@ -60,7 +60,7 @@ const deployPrivateSendUSDC: DeployFunction = async function (hre: HardhatRuntim
   });
   log(`PrivateSendUSDC at ${token.address} on '${hre.network.name}' (chain ${chainId}), USDC ${usdc}, owner ${owner}`);
 
-  if (!hre.network.live) return;
+  if (!hre.network.live || !process.env.ETHERSCAN_MAINNET_API_KEY) return;
   try {
     await hre.run("verify:verify", {
       address: token.address,

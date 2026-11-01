@@ -56,7 +56,8 @@ export const NETWORKS: Record<NetworkKey, Network> = {
     // Keyless public RPC by Allnodes. Source: https://ethereum-sepolia-rpc.publicnode.com
     rpcUrl: "https://ethereum-sepolia-rpc.publicnode.com",
     usdc: "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238",
-    privateUsdc: ZERO,
+    // Deployed 2026-11-01. Owner: 0x79fBe68922074F041Db83F67a9bC0A51df5CdDc9. Record: contracts/deployments/sepolia/
+    privateUsdc: "0xfd8A60F18F79d6CE7f3a546f528cd70dB0e3A461",
   },
 };
 

@@ -54,7 +54,10 @@ const deployConfidentialLib: DeployFunction = async function (hre: HardhatRuntim
   // library on a live chain. (process.env is checked directly, not the hardhat config value,
   // because the config carries a shared fallback key that must not be relied on for
   // production verification.)
-  if (hre.network.live && !process.env.ETHERSCAN_MAINNET_API_KEY) {
+  // Testnets may skip it (verify later by re-running with the key set); mainnets never do.
+  const mainnet = [1, 42161].includes(Number(await hre.getChainId()));
+  const verify = hre.network.live && (mainnet || !!process.env.ETHERSCAN_MAINNET_API_KEY);
+  if (mainnet && !process.env.ETHERSCAN_MAINNET_API_KEY) {
     throw new Error(
       `Refusing to deploy ERC20ConfidentialLib to '${hre.network.name}' without explorer verification.\n` +
         `Set ETHERSCAN_MAINNET_API_KEY in your environment (or .env) and re-run - every deployed\n` +
@@ -76,8 +79,8 @@ const deployConfidentialLib: DeployFunction = async function (hre: HardhatRuntim
     log(`ERC20ConfidentialLib already deployed at ${lib.address} on '${hre.network.name}' (deployment skipped)`);
   }
 
-  if (!hre.network.live) {
-    log(`dev network '${hre.network.name}' - explorer verification skipped`);
+  if (!verify) {
+    log(`'${hre.network.name}': explorer verification skipped (dev network, or testnet without ETHERSCAN_MAINNET_API_KEY)`);
     return;
   }
 
