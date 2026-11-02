@@ -38,7 +38,7 @@ Everything that moves money is Fhenix's audited wrapper code, unchanged. We only
 - **`unshieldAll(to)`**: withdraw a whole private balance without knowing it (needed by people who received a private payment).
 - The ERC-1363 deposit path is switched off (it would skip the caps).
 
-Tested with unit tests for each rule and a randomised stress test (`test/PrivateSendUSDC.stress.test.ts`): 1,000 random deposits, private sends, withdrawals, claims, donations, pauses and attack attempts, checking every balance against an independent model after every step, then draining everything back to zero. Two 1,000-operation runs (722 and 692 transactions) passed exactly.
+Tested with unit tests for each rule and a randomised stress test (`test/PrivateSendUSDC.stress.test.ts`): 1,000 random deposits, private sends, withdrawals, claims, donations, pauses and attack attempts, checking every balance against an independent model after every step, then draining everything back to zero. Two 1,000-operation runs (722 and 692 transactions) passed exactly. A live soak test (`plugin/test/soak-live.ts`) then ran 60 random operations on Fhenix's real network against v2 on Arbitrum Sepolia: 23 private sends back and forth between two wallets, 13 deposits, withdrawals and claims (two submitted by the other wallet), with both balances decrypted through Fhenix and matching after every step, and all 20 USDC returned at the end (60 transactions, 8.7 minutes).
 
 The plugin keeps deposits and withdrawals to whole USDC, because those amounts are public and odd amounts are easy to match to each other. Privacy here means hidden from the public blockchain: the amount a user types is still seen by their AI assistant, PayBox and the plugin.
 
